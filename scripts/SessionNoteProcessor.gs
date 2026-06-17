@@ -175,7 +175,15 @@ function processUnreadNotes() {
     if (!name.toLowerCase().includes('sessionnote')) continue; // match any file with SessionNote in name
     if (name.match(/^TEMPLATE_/i)) continue; // skip template file
     if (name.match(/^README/i)) continue; // skip readme
-    var content = file.getBlob().getDataAsString();
+    // Use Drive API to fetch file content with newlines preserved
+    // getBlob().getDataAsString() strips newlines — use UrlFetchApp instead
+    var fileId = file.getId();
+    var url = 'https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media';
+    var response = UrlFetchApp.fetch(url, {
+      headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+      muteHttpExceptions: true
+    });
+    var content = response.getContentText('UTF-8');
     if (extractField(content, 'PROCESSED').toLowerCase() === 'yes') continue;
     Logger.log('Processing: ' + name);
     processNote(content, file, sheet);

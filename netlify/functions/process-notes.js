@@ -293,9 +293,12 @@ export async function handler(event) {
 
       const content = await getFileContent(token, file.id);
       console.log(`Read ${name}: ${content.length} chars, has newlines: ${content.includes('\n')}`);
+      console.log(`First 200: ${content.substring(0, 200)}`);
 
       const processedField = extractField(content, 'PROCESSED');
-      if (processedField.toLowerCase() === 'yes') continue;
+      console.log(`PROCESSED field: "${processedField}"`);
+      diagnostics[name] = { chars: content.length, hasNewlines: content.includes('\n'), processed: processedField, first100: content.substring(0, 100) };
+      if (processedField.toLowerCase() === 'yes') { console.log(`Skipping ${name} — already processed`); continue; }
 
       const updated = await processNote(content, name);
       if (!updated) continue;

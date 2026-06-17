@@ -21,9 +21,10 @@ export async function handler(event) {
   }
 
   try {
-    // ── GET: read all projects ──
+    // ── GET: read all projects (or sync if ?action=sync) ──
     if (event.httpMethod === 'GET') {
-      const url = `${APPS_SCRIPT_URL}?secret=${encodeURIComponent(SECRET)}`;
+      const action = event.queryStringParameters?.action || '';
+      const url = `${APPS_SCRIPT_URL}?secret=${encodeURIComponent(SECRET)}${action ? '&action=' + action : ''}`;
       const res = await fetch(url, { redirect: 'follow' });
       const data = await res.json();
       return { statusCode: 200, headers: cors, body: JSON.stringify(data) };

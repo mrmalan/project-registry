@@ -29,64 +29,32 @@ async function getAccessToken() {
   return data.access_token;
 }
 
-// ── List files in Drive folder ──
+// ── Call Apps Script Web App ──
+async function callAppsScript(action, body) {
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    redirect: 'follow',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secret: SECRET, action, ...body }),
+  });
+  return await res.json();
+}
+
+// ── List files via Apps Script ──
 async function listFiles(token, folderId) {
-  const q = encodeURIComponent(`'${folderId}' in parents and trashed = false`);
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType)&pageSize=50`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  const data = await res.json();
-  return data.files || [];
+  const data = await callAppsScript('listFolder', { folderId });
+  return Array.isArray(data) ? data : [];
 }
 
-// ── Get file content ──
+// ── Get file content via Apps Script ──
 async function getFileContent(token, fileId) {
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  return await res.text();
+  const data = await callAppsScript('readFile', { fileId });
+  return data.content || '';
 }
 
-// ── Update file content (mark as processed) ──
-async function updateFileContent(token, fileId, content) {
-  await fetch(
-    `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
-    {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'text/plain' },
-      body: content,
-    }
-  );
-}
-
-// ── Move file to Archive subfolder ──
-async function archiveFile(token, fileId, folderId) {
-  // Find or create Archive folder
-  const q = encodeURIComponent(`name = 'Archive' and '${folderId}' in parents and trashed = false`);
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  const data = await res.json();
-  let archiveId;
-  if (data.files && data.files.length > 0) {
-    archiveId = data.files[0].id;
-  } else {
-    const created = await fetch('https://www.googleapis.com/drive/v3/files', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Archive', mimeType: 'application/vnd.google-apps.folder', parents: [folderId] }),
-    });
-    const folder = await created.json();
-    archiveId = folder.id;
-  }
-  // Move file: add to archive, remove from parent
-  await fetch(
-    `https://www.googleapis.com/drive/v3/files/${fileId}?addParents=${archiveId}&removeParents=${folderId}&fields=id`,
-    { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } }
-  );
+// ── Mark processed and archive via Apps Script ──
+async function archiveFile(token, fileId, folderId, content) {
+  await callAppsScript('markProcessed', { fileId, folderId, content });
 }
 
 // ── Section parser ──
@@ -267,11 +235,9 @@ async function processNote(content, fileName) {
 // ── Main handler ──
 export async function handler(event) {
   console.log('process-notes: starting');
-  const diagnostics = { folderID: FOLDER_ID, hasClientId: !!CLIENT_ID, hasSecret: !!CLIENT_SECRET, hasRefresh: !!REFRESH_TOKEN, hasAppsScript: !!APPS_SCRIPT_URL };
-  console.log('Config:', JSON.stringify(diagnostics));
+  const diagnostics = { folderID: FOLDER_ID, hasAppsScript: !!APPS_SCRIPT_URL };
   try {
-    const token = await getAccessToken();
-    console.log('Got access token:', token ? 'yes' : 'no');
+    const token = null; // Not needed — using Apps Script for Drive operations
     const files = await listFiles(token, FOLDER_ID);
     console.log(`Found ${files.length} files in folder`);
     console.log('Files:', JSON.stringify(files.map(f => f.name)));
@@ -306,12 +272,8 @@ export async function handler(event) {
       // Write to Sheet
       await patchProject(updated);
 
-      // Mark processed
-      const newContent = content.replace(/^PROCESSED:\s*no/im, 'PROCESSED: yes');
-      await updateFileContent(token, file.id, newContent);
-
-      // Archive
-      await archiveFile(token, file.id, FOLDER_ID);
+      // Mark processed and archive via Apps Script
+      await archiveFile(token, file.id, FOLDER_ID, content);
 
       console.log(`✓ Processed and archived: ${name} → ${updated.title}`);
       processed++;

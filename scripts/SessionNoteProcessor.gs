@@ -66,11 +66,15 @@ function doPost(e) {
     if (action === 'listFolder') {
       var folderId = body.folderId;
       var folder = DriveApp.getFolderById(folderId);
-      var files = folder.getFiles();
+      var iter = folder.getFiles();
       var result = [];
-      while (files.hasNext()) {
-        var f = files.next();
-        result.push({ id: f.getId(), name: f.getName(), mimeType: f.getMimeType() });
+      while (iter.hasNext()) {
+        var f = iter.next();
+        var name = f.getName();
+        // Skip non-session-note files
+        if (!name.toLowerCase().includes('sessionnote')) continue;
+        if (name.match(/^TEMPLATE_/i) || name.match(/^README/i)) continue;
+        result.push({ id: f.getId(), name: name, mimeType: f.getMimeType() });
       }
       return jsonResponse(result);
     }

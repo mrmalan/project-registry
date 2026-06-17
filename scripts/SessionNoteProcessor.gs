@@ -35,6 +35,11 @@ function doGet(e) {
     if ((e.parameter.secret || '') !== SECRET) {
       return jsonResponse({error: 'Unauthorized'}, 401);
     }
+    // Manual sync trigger
+    if (e.parameter.action === 'sync') {
+      processUnreadNotes();
+      return jsonResponse({ok: true, message: 'Sync complete'});
+    }
     var sheet = SpreadsheetApp.openById(SHEET_ID).getSheets()[0];
     ensureHeaders(sheet);
     var projects = readAllProjects(sheet);

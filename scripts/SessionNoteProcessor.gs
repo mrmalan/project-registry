@@ -320,21 +320,29 @@ function extractField(content, name) {
 }
 
 function extractSection(content, name) {
-  // Match section headers in various formats:
-  // "NEXT ACTIONS — ADD", "NEXT ACTIONS (to add)", "──── NEXT ACTIONS ────", "WHAT WAS DONE THIS SESSION", "WHAT WAS DONE"
-  // Strip the ──── dividers and match the core name loosely
+  // Normalise content: replace ──── lines with a standard marker
+  var normalised = content.replace(/^[─=]{4,}\s*$/gm, '###DIVIDER###');
+
+  // Core name without qualifiers for loose matching
   var coreName = name
-    .replace(' — ADD', '').replace(' — DONE/REMOVE', '').replace(' — RESOLVED/REMOVE', '')
-    .replace(' THIS SESSION', '');
+    .replace(/ — ADD$/i, '').replace(/ — DONE\/REMOVE$/i, '').replace(/ — RESOLVED\/REMOVE$/i, '')
+    .replace(/ THIS SESSION$/i, '').replace(/ \(to add\)$/i, '');
   var escaped = coreName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // Match: optional dividers, then the core name, then anything on same line, then newline
-  var headerPat = '(?:[─=\\-]{2,}[^\\n]*\\n)?[^\\n]*' + escaped + '[^\\n]*\\n';
-  var m = content.match(new RegExp(headerPat + '(?:[─=\\-]{2,}\\n)?([\\s\\S]+?)(?=\\n[─=\\-]{2,}|\\n[A-Z][A-Z &()\\-/]+(?:[:\\-—]|\\s*\\n)|\\n={3,}|$)', 'i'));
+
+  // Match the section: divider or header line containing core name, then content until next divider/header
+  var pattern = new RegExp(
+    '(?:###DIVIDER###\\n)?[^\\n]*' + escaped + '[^\\n]*\\n(?:###DIVIDER###\\n)?([\\s\\S]+?)(?=###DIVIDER###|\\n[A-Z][A-Z &()\\/\\-]+(?:[:\\-—(]|\\s*\\n)|\\n={3,}|$)',
+    'i'
+  );
+  var m = normalised.match(pattern);
   if (!m) return '';
+
   var text = m[1].trim();
-  // Strip trailing section-header lines that leaked through
-  text = text.replace(/\n[─=\-]{2,}[^\n]*$/m, '').trim();
-  text = text.replace(/\n[A-Z][A-Z &()\-\/]+(?:[—\-]+)?\s*$/m, '').trim();
+  // Remove any divider markers that leaked through
+  text = text.replace(/###DIVIDER###/g, '').trim();
+  // Remove trailing ALL-CAPS header lines
+  text = text.replace(/\n[A-Z][A-Z &()\/\-]+(?:[—\-]+)?\s*$/m, '').trim();
+  // Remove bullet prefixes
   return text.replace(/^[-*•\\]\s*/gm, '').trim();
 }
 

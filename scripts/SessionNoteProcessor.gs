@@ -1,5 +1,6 @@
 // ============================================================
 // Project Registry — Session Note Processor + Web App API
+// Auto-deployed via GitHub Actions + clasp
 // Google Apps Script
 //
 // SETUP:

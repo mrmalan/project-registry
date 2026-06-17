@@ -267,10 +267,14 @@ async function processNote(content, fileName) {
 // ── Main handler ──
 export async function handler(event) {
   console.log('process-notes: starting');
+  const diagnostics = { folderID: FOLDER_ID, hasClientId: !!CLIENT_ID, hasSecret: !!CLIENT_SECRET, hasRefresh: !!REFRESH_TOKEN, hasAppsScript: !!APPS_SCRIPT_URL };
+  console.log('Config:', JSON.stringify(diagnostics));
   try {
     const token = await getAccessToken();
+    console.log('Got access token:', token ? 'yes' : 'no');
     const files = await listFiles(token, FOLDER_ID);
     console.log(`Found ${files.length} files in folder`);
+    console.log('Files:', JSON.stringify(files.map(f => f.name)));
 
     let processed = 0;
     for (const file of files) {
@@ -302,9 +306,9 @@ export async function handler(event) {
     }
 
     console.log(`process-notes: done. Processed ${processed} note(s).`);
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, processed }) };
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, processed, diagnostics }) };
   } catch (err) {
     console.error('process-notes error:', err);
-    return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: err.message }) };
+    return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: err.message, diagnostics }) };
   }
 }

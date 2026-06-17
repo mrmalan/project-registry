@@ -138,6 +138,22 @@ export default function App() {
                 setProjects(prev => [...prev, p])
                 setCurrentId(id); setView('detail'); setEditMode(true)
               }}>+ New project</button>
+              <button className="btn" onClick={async () => {
+                showToast('Syncing…')
+                try {
+                  const res = await fetch('/.netlify/functions/sheet?action=sync')
+                  const data = await res.json()
+                  if (data.ok) {
+                    // Reload projects after sync
+                    const fresh = await api.getProjects()
+                    setProjects(fresh.map(p => ({ ...p, next: (p.next||[]).map(mkTask) })))
+                    setSaveStatus('Synced ' + nowTs())
+                    showToast('Sync complete')
+                  } else {
+                    showToast('Sync failed: ' + (data.error||'unknown'))
+                  }
+                } catch(e) { showToast('Sync failed: ' + e.message) }
+              }}>Sync now ↻</button>
               <button className="btn" onClick={() => {
                 const blob = new Blob([JSON.stringify(projects,null,2)],{type:'application/json'})
                 const a = document.createElement('a'); a.href = URL.createObjectURL(blob)

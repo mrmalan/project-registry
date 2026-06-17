@@ -370,6 +370,26 @@ function parseDocs(raw) {
     if (t) { if (cur.label) docs.push(cur); cur = {type:t[1].trim(),label:'',url:''}; }
     else if (l && cur.type) cur.label = l[1].trim();
     else if (u && cur.type) cur.url = u[1].trim();
+    else {
+      // Handle bullet format: "- Filename.ext — Description" or "- Label — url"
+      var bullet = line.match(/^[-*]\s+(.+)/);
+      if (bullet && !cur.type) {
+        var text = bullet[1].trim();
+        var parts = text.split(/\s+[—\-]+\s+/);
+        var label = parts[0].replace(/_/g, ' ').trim();
+        if (label.length > 0) {
+          var type = 'Doc';
+          var extMatch = label.match(/\.([a-z]+)$/i);
+          if (extMatch) {
+            var e = extMatch[1].toLowerCase();
+            if (e === 'xlsx' || e === 'csv') type = 'Model';
+            else if (e === 'pptx') type = 'Deck';
+            else if (e === 'js' || e === 'ts' || e === 'py' || e === 'gs') type = 'Code';
+          }
+          docs.push({type: type, label: label, url: ''});
+        }
+      }
+    }
   });
   if (cur.label) docs.push(cur);
   return docs;

@@ -185,12 +185,12 @@ function processUnreadNotes() {
 function processNote(content, file, sheet) {
   var projectTitle = extractField(content, 'PROJECT');
   var status = extractField(content, 'STATUS');
-  var whatWasDone = extractSection(content, 'WHAT WAS DONE THIS SESSION');
-  var nextAdd = extractList(content, 'NEXT ACTIONS — ADD');
+  var whatWasDone = extractSection(content, 'WHAT WAS DONE THIS SESSION') || extractSection(content, 'WHAT WAS DONE');
+  var nextAdd = extractList(content, 'NEXT ACTIONS — ADD') .concat(extractList(content, 'NEXT ACTIONS (to add)'));
   var nextRemove = extractList(content, 'NEXT ACTIONS — DONE/REMOVE');
-  var openAdd = extractList(content, 'OPEN ITEMS — ADD');
+  var openAdd = extractList(content, 'OPEN ITEMS — ADD').concat(extractList(content, 'OPEN ITEMS'));
   var openRemove = extractList(content, 'OPEN ITEMS — RESOLVED/REMOVE');
-  var docsRaw = extractSection(content, 'DOCUMENTS ADDED');
+  var docsRaw = extractSection(content, 'DOCUMENTS ADDED') || extractSection(content, 'NEW DOCUMENTS');
   var stackUpdate = extractSection(content, 'STACK / CONTACTS UPDATE');
   var sessionNotes = extractSection(content, 'SESSION NOTES');
 
@@ -303,24 +303,43 @@ function getOrCreateArchive(parent) {
 }
 
 function extractField(content, name) {
-  var m = content.match(new RegExp('^' + name + ':\\s*(.+)$', 'im'));
+  // Match "NAME: value" or "NAME — value" patterns
+  var m = content.match(new RegExp('^[\\-─]*\\s*' + name + '[:\\s—\\-]+(.+)$', 'im'));
   return m ? m[1].trim() : '';
 }
 
 function extractSection(content, name) {
-  // Stop at next section header (ALL CAPS line with optional — or - suffix) or end markers
-  var m = content.match(new RegExp(name + '[^\\n]*\\n([\\s\\S]+?)(?=\\n[A-Z][A-Z/ ]+(?:[—\\-]+|:)?\\s*\\n|\\n={3,}|$)', 'i'));
+  // Match section headers in various formats:
+  // "NEXT ACTIONS — ADD", "NEXT ACTIONS (to add)", "──── NEXT ACTIONS ────", "WHAT WAS DONE THIS SESSION", "WHAT WAS DONE"
+  // Strip the ──── dividers and match the core name loosely
+  var coreName = name
+    .replace(' — ADD', '').replace(' — DONE/REMOVE', '').replace(' — RESOLVED/REMOVE', '')
+    .replace(' THIS SESSION', '');
+  var escaped = coreName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Match: optional dividers, then the core name, then anything on same line, then newline
+  var headerPat = '(?:[─=\\-]{2,}[^\\n]*\\n)?[^\\n]*' + escaped + '[^\\n]*\\n';
+  var m = content.match(new RegExp(headerPat + '(?:[─=\\-]{2,}\\n)?([\\s\\S]+?)(?=\\n[─=\\-]{2,}|\\n[A-Z][A-Z &()\\-/]+(?:[:\\-—]|\\s*\\n)|\\n={3,}|$)', 'i'));
   if (!m) return '';
-  // Remove any trailing section-header-like lines that leaked through
   var text = m[1].trim();
-  text = text.replace(/\n[A-Z][A-Z\/\- ]+(?:[—]+)?\s*$/m, '').trim();
-  return text.replace(/^-+\s*/gm, '').trim();
+  // Strip trailing section-header lines that leaked through
+  text = text.replace(/\n[─=\-]{2,}[^\n]*$/m, '').trim();
+  text = text.replace(/\n[A-Z][A-Z &()\-\/]+(?:[—\-]+)?\s*$/m, '').trim();
+  return text.replace(/^[-*•\\]\s*/gm, '').trim();
 }
 
 function extractList(content, name) {
   var s = extractSection(content, name);
   if (!s) return [];
-  return s.split('\n').map(function(l) { return l.replace(/^[-*•]\s*/, '').trim(); }).filter(Boolean);
+  return s.split('\n')
+    .map(function(l) { return l.replace(/^[-*•\\\\]\s*/, '').trim(); })
+    .filter(function(l) { return l.length > 0 && !l.match(/^[─=]{3,}/); });
+}
+
+function extractDocs(content) {
+  // Handle both "DOCUMENTS ADDED" and "NEW DOCUMENTS" sections
+  var section = extractSection(content, 'DOCUMENTS ADDED') || extractSection(content, 'NEW DOCUMENTS');
+  if (!section) return [];
+  return parseDocs(section);
 }
 
 function parseDocs(raw) {

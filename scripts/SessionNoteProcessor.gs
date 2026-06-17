@@ -171,8 +171,9 @@ function processUnreadNotes() {
   while (files.hasNext()) {
     var file = files.next();
     var name = file.getName();
-    if (!name.match(/_SessionNote(\.txt)?$/i)) continue;
+    if (!name.toLowerCase().includes('sessionnote')) continue; // match any file with SessionNote in name
     if (name.match(/^TEMPLATE_/i)) continue; // skip template file
+    if (name.match(/^README/i)) continue; // skip readme
     var content = file.getBlob().getDataAsString();
     if (extractField(content, 'PROCESSED').toLowerCase() === 'yes') continue;
     Logger.log('Processing: ' + name);

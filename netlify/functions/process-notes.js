@@ -275,6 +275,15 @@ export async function handler(event) {
     const files = await listFiles(token, FOLDER_ID);
     console.log(`Found ${files.length} files in folder`);
     console.log('Files:', JSON.stringify(files.map(f => f.name)));
+    diagnostics.fileCount = files.length;
+    diagnostics.fileNames = files.map(f => f.name);
+    // Also try listing with just parent query to debug
+    const allRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent("'"+FOLDER_ID+"' in parents")}&fields=files(id,name,mimeType)&pageSize=20`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const allData = await allRes.json();
+    diagnostics.rawFiles = allData.files ? allData.files.map(f => f.name) : allData;
 
     let processed = 0;
     for (const file of files) {

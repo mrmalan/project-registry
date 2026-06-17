@@ -9,12 +9,12 @@ jobs:
   push-to-apps-script:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install clasp
         run: npm install -g @google/clasp
@@ -22,11 +22,11 @@ jobs:
       - name: Write clasp credentials
         run: echo '${{ secrets.CLASP_CREDENTIALS }}' > ~/.clasprc.json
 
-      - name: Write .clasp.json
-        run: echo '{"scriptId":"${{ secrets.SCRIPT_ID }}","rootDir":"./scripts"}' > .clasp.json
-
-      - name: Rename to Code.gs for clasp
+      - name: Copy gs file to Code.gs
         run: cp scripts/SessionNoteProcessor.gs scripts/Code.gs
 
       - name: Push to Apps Script
-        run: clasp push --force
+        working-directory: scripts
+        run: |
+          echo '{"scriptId":"${{ secrets.SCRIPT_ID }}"}' > .clasp.json
+          clasp push --force

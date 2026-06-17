@@ -2,7 +2,7 @@
 // Scheduled function — runs every 30 min
 // Reads session notes from Google Drive, parses them, writes to Sheet via Apps Script
 
-export const config = { schedule: "*/30 * * * *" };
+// Runs on schedule AND can be called manually via GET /.netlify/functions/process-notes
 
 const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL;
@@ -265,7 +265,7 @@ async function processNote(content, fileName) {
 }
 
 // ── Main handler ──
-export default async function handler() {
+export async function handler(event) {
   console.log('process-notes: starting');
   try {
     const token = await getAccessToken();
@@ -302,7 +302,9 @@ export default async function handler() {
     }
 
     console.log(`process-notes: done. Processed ${processed} note(s).`);
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, processed }) };
   } catch (err) {
     console.error('process-notes error:', err);
+    return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: err.message }) };
   }
 }

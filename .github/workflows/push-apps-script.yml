@@ -30,3 +30,14 @@ jobs:
           echo '{"timeZone":"Africa/Johannesburg","dependencies":{},"exceptionLogging":"STACKDRIVER","runtimeVersion":"V8"}' > appsscript.json
           ls -la
           clasp push --force
+
+      - name: Reminder - redeploy Web App
+        run: |
+          echo "=========================================="
+          echo "Apps Script code updated successfully."
+          echo ""
+          echo "MANUAL STEP REQUIRED:"
+          echo "Go to script.google.com, open the project,"
+          echo "Deploy > Manage deployments > Edit pencil"
+          echo "> New version > Deploy"
+          echo "=========================================="

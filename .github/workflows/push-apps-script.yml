@@ -22,21 +22,16 @@ jobs:
       - name: Write clasp credentials
         run: echo '${{ secrets.CLASP_CREDENTIALS }}' > ~/.clasprc.json
 
-      - name: Copy gs file to Code.gs
-        run: cp scripts/SessionNoteProcessor.gs scripts/Code.gs
-
-      - name: Write appsscript.json
+      - name: Setup and push
         run: |
+          cd scripts
+          cp SessionNoteProcessor.gs Code.gs
+          echo '{"scriptId":"${{ secrets.SCRIPT_ID }}"}' > .clasp.json
           echo '{
             "timeZone": "Africa/Johannesburg",
             "dependencies": {},
             "exceptionLogging": "STACKDRIVER",
             "runtimeVersion": "V8"
-          }' > scripts/appsscript.json
-
-      - name: Write .clasp.json
-        run: |
-          echo '{"scriptId":"${{ secrets.SCRIPT_ID }}","rootDir":"scripts"}' > .clasp.json
-
-      - name: Push to Apps Script
-        run: clasp push --force
+          }' > appsscript.json
+          ls -la
+          clasp push --force

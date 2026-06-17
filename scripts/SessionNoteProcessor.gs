@@ -62,6 +62,44 @@ function doPost(e) {
 
     var action = body.action;
 
+    // ── listFolder: list files in Drive folder ──
+    if (action === 'listFolder') {
+      var folderId = body.folderId;
+      var folder = DriveApp.getFolderById(folderId);
+      var files = folder.getFiles();
+      var result = [];
+      while (files.hasNext()) {
+        var f = files.next();
+        result.push({ id: f.getId(), name: f.getName(), mimeType: f.getMimeType() });
+      }
+      return jsonResponse(result);
+    }
+
+    // ── readFile: read file content via UrlFetchApp ──
+    if (action === 'readFile') {
+      var fileId = body.fileId;
+      var url = 'https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media';
+      var response = UrlFetchApp.fetch(url, {
+        headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+        muteHttpExceptions: true
+      });
+      return jsonResponse({ content: response.getContentText('UTF-8') });
+    }
+
+    // ── markProcessed: update PROCESSED field and move to archive ──
+    if (action === 'markProcessed') {
+      var fileId = body.fileId;
+      var folderId = body.folderId;
+      var content = body.content;
+      var updated = content.replace(/^PROCESSED:\s*no/im, 'PROCESSED: yes');
+      var file = DriveApp.getFileById(fileId);
+      file.setContent(updated);
+      var archiveFolder = getOrCreateArchive(DriveApp.getFolderById(folderId));
+      archiveFolder.addFile(file);
+      DriveApp.getFolderById(folderId).removeFile(file);
+      return jsonResponse({ ok: true });
+    }
+
     // ── PUT: replace all projects ──
     if (action === 'put') {
       var projects = body.projects;

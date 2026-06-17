@@ -308,8 +308,13 @@ function extractField(content, name) {
 }
 
 function extractSection(content, name) {
-  var m = content.match(new RegExp(name + '\\s*[-]*\\s*\\n([\\s\\S]+?)(?=\\n[A-Z][A-Z ]+[—\\-]{0,3}\\n|\\n={3,}|$)', 'i'));
-  return m ? m[1].trim().replace(/^-+\s*/gm, '').trim() : '';
+  // Stop at next section header (ALL CAPS line with optional — or - suffix) or end markers
+  var m = content.match(new RegExp(name + '[^\\n]*\\n([\\s\\S]+?)(?=\\n[A-Z][A-Z/ ]+(?:[—\\-]+|:)?\\s*\\n|\\n={3,}|$)', 'i'));
+  if (!m) return '';
+  // Remove any trailing section-header-like lines that leaked through
+  var text = m[1].trim();
+  text = text.replace(/\n[A-Z][A-Z\/\- ]+(?:[—]+)?\s*$/m, '').trim();
+  return text.replace(/^-+\s*/gm, '').trim();
 }
 
 function extractList(content, name) {

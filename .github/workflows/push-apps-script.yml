@@ -25,10 +25,18 @@ jobs:
       - name: Copy gs file to Code.gs
         run: cp scripts/SessionNoteProcessor.gs scripts/Code.gs
 
+      - name: Write appsscript.json
+        run: |
+          echo '{
+            "timeZone": "Africa/Johannesburg",
+            "dependencies": {},
+            "exceptionLogging": "STACKDRIVER",
+            "runtimeVersion": "V8"
+          }' > scripts/appsscript.json
+
       - name: Write .clasp.json
         run: |
           echo '{"scriptId":"${{ secrets.SCRIPT_ID }}","rootDir":"scripts"}' > .clasp.json
 
-      - name: Debug directory
-        run: |
-          echo "=== repo root
+      - name: Push to Apps Script
+        run: clasp push --force

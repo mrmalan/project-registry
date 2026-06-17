@@ -172,6 +172,7 @@ function processUnreadNotes() {
     var file = files.next();
     var name = file.getName();
     if (!name.match(/_SessionNote(\.txt)?$/i)) continue;
+    if (name.match(/^TEMPLATE_/i)) continue; // skip template file
     var content = file.getBlob().getDataAsString();
     if (extractField(content, 'PROCESSED').toLowerCase() === 'yes') continue;
     Logger.log('Processing: ' + name);

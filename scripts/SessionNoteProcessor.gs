@@ -186,13 +186,13 @@ function processUnreadNotes() {
 
 function processNote(content, file, sheet) {
   // Normalise markdown-escaped content from Google Drive MCP conversion
-  // Drive converts plain text to Google Docs which escapes: \- \= \-- etc.
-  content = content.replace(/^\\-/gm, '-');      // \- → -
-  content = content.replace(/^\\=/gm, '=');       // \= → =
-  content = content.replace(/\\~/g, '~');         // \~ → ~
-  content = content.replace(/\\[/g, '[');         // \[ → [
-  content = content.replace(/\\]/g, ']');         // \] → ]
-  content = content.replace(/\\_/g, '_');         // \_ → _
+  // Drive MCP escapes characters like \- \= \[ \] \_
+  content = content.split('\\-').join('-');
+  content = content.split('\\=').join('=');
+  content = content.split('\\~').join('~');
+  content = content.split('\\[').join('[');
+  content = content.split('\\]').join(']');
+  content = content.split('\\_').join('_');
   var projectTitle = extractField(content, 'PROJECT');
   // Fallback: extract from "SESSION NOTE — Project Name" title line
   if (!projectTitle) {

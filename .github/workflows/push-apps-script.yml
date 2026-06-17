@@ -28,10 +28,5 @@ jobs:
           cp SessionNoteProcessor.gs Code.gs
           echo '{"scriptId":"${{ secrets.SCRIPT_ID }}"}' > .clasp.json
           echo '{"timeZone":"Africa/Johannesburg","dependencies":{},"exceptionLogging":"STACKDRIVER","runtimeVersion":"V8"}' > appsscript.json
-          echo "=== files in scripts ===" && ls -la
-          echo "=== clasp version ===" && clasp --version
-          echo "=== .clasp.json ===" && cat .clasp.json
-          echo "=== appsscript.json ===" && cat appsscript.json
-          echo "=== clasp push output ===" 
-          clasp push --force 2>&1 || true
-          echo "=== exit ===" && clasp push --force
+          ls -la
+          clasp push --force

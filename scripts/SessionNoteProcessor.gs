@@ -321,30 +321,37 @@ function extractField(content, name) {
 }
 
 function extractSection(content, name) {
-  // Normalise content: replace ──── lines with a standard marker
+  // Normalise content: replace ──── divider lines with a standard marker
   var normalised = content.replace(/^[─=]{4,}\s*$/gm, '###DIVIDER###');
 
-  // Core name without qualifiers for loose matching
+  // Try exact match first (for standard format with full section names)
+  var escapedFull = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  var patternFull = new RegExp(
+    '^' + escapedFull + '[^\n]*\n(?:[-─=]+\n)?([\s\S]+?)(?=\n[A-Z][A-Z &()\/\-—]+(?:\n|\s*[-─=])|\n={3,}|###DIVIDER###|$)',
+    'im'
+  );
+  var mFull = normalised.match(patternFull);
+  if (mFull) {
+    var text = mFull[1].trim();
+    text = text.replace(/###DIVIDER###/g, '').trim();
+    text = text.replace(/\n[A-Z][A-Z &()\/\-—]+\s*$/m, '').trim();
+    return text.replace(/^[-*•\\]\s*/gm, '').trim();
+  }
+
+  // Fallback: loose match for ──── divider format (strip qualifiers)
   var coreName = name
     .replace(/ — ADD$/i, '').replace(/ — DONE\/REMOVE$/i, '').replace(/ — RESOLVED\/REMOVE$/i, '')
     .replace(/ THIS SESSION$/i, '').replace(/ \(to add\)$/i, '');
-  var escaped = coreName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-  // Match the section: divider or header line containing core name, then content until next divider/header
-  var pattern = new RegExp(
-    '(?:###DIVIDER###\\n)?[^\\n]*' + escaped + '[^\\n]*\\n(?:###DIVIDER###\\n)?([\\s\\S]+?)(?=###DIVIDER###|\\n[A-Z][A-Z &()\\/\\-]+(?:[:\\-—(]|\\s*\\n)|\\n={3,}|$)',
+  var escapedCore = coreName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  var patternLoose = new RegExp(
+    '###DIVIDER###\n[^\n]*' + escapedCore + '[^\n]*\n###DIVIDER###\n([\s\S]+?)(?=###DIVIDER###|$)',
     'i'
   );
-  var m = normalised.match(pattern);
-  if (!m) return '';
-
-  var text = m[1].trim();
-  // Remove any divider markers that leaked through
-  text = text.replace(/###DIVIDER###/g, '').trim();
-  // Remove trailing ALL-CAPS header lines
-  text = text.replace(/\n[A-Z][A-Z &()\/\-]+(?:[—\-]+)?\s*$/m, '').trim();
-  // Remove bullet prefixes
-  return text.replace(/^[-*•\\]\s*/gm, '').trim();
+  var mLoose = normalised.match(patternLoose);
+  if (!mLoose) return '';
+  var text2 = mLoose[1].trim();
+  text2 = text2.replace(/###DIVIDER###/g, '').trim();
+  return text2.replace(/^[-*•\\]\s*/gm, '').trim();
 }
 
 function extractList(content, name) {

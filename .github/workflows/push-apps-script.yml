@@ -29,5 +29,6 @@ jobs:
         run: |
           echo '{"scriptId":"${{ secrets.SCRIPT_ID }}","rootDir":"scripts"}' > .clasp.json
 
-      - name: Push to Apps Script
-        run: clasp push --force
+      - name: Debug directory
+        run: |
+          echo "=== repo root

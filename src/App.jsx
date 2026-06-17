@@ -141,17 +141,13 @@ export default function App() {
               <button className="btn" onClick={async () => {
                 showToast('Syncing…')
                 try {
-                  const res = await fetch('/.netlify/functions/sheet?action=sync')
-                  const data = await res.json()
-                  if (data.ok) {
-                    // Reload projects after sync
-                    const fresh = await api.getProjects()
-                    setProjects(fresh.map(p => ({ ...p, next: (p.next||[]).map(mkTask) })))
-                    setSaveStatus('Synced ' + nowTs())
-                    showToast('Sync complete')
-                  } else {
-                    showToast('Sync failed: ' + (data.error||'unknown'))
-                  }
+                  // Call Netlify process-notes function directly
+                  const res = await fetch('/.netlify/functions/process-notes')
+                  // Reload projects after sync regardless of response
+                  const fresh = await api.getProjects()
+                  setProjects(fresh.map(p => ({ ...p, next: (p.next||[]).map(mkTask) })))
+                  setSaveStatus('Synced ' + nowTs())
+                  showToast('Sync complete')
                 } catch(e) { showToast('Sync failed: ' + e.message) }
               }}>Sync now ↻</button>
               <button className="btn" onClick={() => {

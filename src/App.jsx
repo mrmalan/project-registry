@@ -67,7 +67,7 @@ export default function App() {
   useEffect(() => {
     api.getProjects()
       .then(data => {
-        setProjects(data.map(p => ({ ...p, next: (p.next||[]).map(mkTask) })))
+        setProjects(data.map(p => ({ ...p, next: (p.next||[]).map(mkTask), openReminders: typeof p.openReminders === 'string' ? JSON.parse(p.openReminders || '{}') : (p.openReminders || {}) })))
         setLoading(false)
         setSaveStatus('Loaded from Google Sheet')
       })

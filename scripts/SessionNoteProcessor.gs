@@ -184,6 +184,16 @@ function processUnreadNotes() {
 
 function processNote(content, file, sheet) {
   var projectTitle = extractField(content, 'PROJECT');
+  // Fallback: extract from "SESSION NOTE — Project Name" title line
+  if (!projectTitle) {
+    var titleMatch = content.match(/^SESSION NOTE[\s—\-]+(.+)$/im);
+    if (titleMatch) projectTitle = titleMatch[1].trim();
+  }
+  // Fallback: extract from "Date:" line context or filename hint
+  if (!projectTitle) {
+    var dateLineMatch = content.match(/^(?:Project|For|Re)[:\s]+(.+)$/im);
+    if (dateLineMatch) projectTitle = dateLineMatch[1].trim();
+  }
   var status = extractField(content, 'STATUS');
   var whatWasDone = extractSection(content, 'WHAT WAS DONE THIS SESSION') || extractSection(content, 'WHAT WAS DONE');
   var nextAdd = extractList(content, 'NEXT ACTIONS — ADD') .concat(extractList(content, 'NEXT ACTIONS (to add)'));

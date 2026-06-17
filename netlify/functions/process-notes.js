@@ -254,9 +254,6 @@ export async function handler(event) {
     let processed = 0;
     for (const file of files) {
       const name = file.name || '';
-      if (!name.toLowerCase().includes('sessionnote')) continue;
-      if (name.match(/^TEMPLATE_/i) || name.match(/^README/i)) continue;
-
       const content = await getFileContent(token, file.id);
       console.log(`Read ${name}: ${content.length} chars, has newlines: ${content.includes('\n')}`);
       console.log(`First 200: ${content.substring(0, 200)}`);

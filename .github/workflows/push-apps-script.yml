@@ -25,8 +25,9 @@ jobs:
       - name: Copy gs file to Code.gs
         run: cp scripts/SessionNoteProcessor.gs scripts/Code.gs
 
-      - name: Push to Apps Script
-        working-directory: scripts
+      - name: Write .clasp.json
         run: |
-          echo '{"scriptId":"${{ secrets.SCRIPT_ID }}"}' > .clasp.json
-          clasp push --force
+          echo '{"scriptId":"${{ secrets.SCRIPT_ID }}","rootDir":"scripts"}' > .clasp.json
+
+      - name: Push to Apps Script
+        run: clasp push --force
